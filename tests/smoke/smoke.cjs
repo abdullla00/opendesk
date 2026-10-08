@@ -1,5 +1,7 @@
-// A browser smoke test for Open Desk: the rail, its module list and tools, the user menu, Manage
-// Rail and Manage Modules, and the Apps screen, on a running site, as one user.
+// A browser smoke test for Open Desk: the rail, its module picker and tools, the user menu, Manage
+// Rail and Manage Modules, and the Apps screen, on a running site, as one user. The module picker
+// is checked in whichever form Open Desk Settings' Module Picker gives it: Header Menu, Sidebar
+// List or Module Column.
 //
 // It only reads. Every editor it opens is closed without saving, and it changes no setting: what it
 // checks is whatever the site has switched on (Open Desk Settings), and a feature switched off is
@@ -65,6 +67,49 @@ async function close_dialogs(page) {
   }
 }
 
+// The sidebar header, when its menu would hold a single row (Edit Sidebar beside the Module
+// Column), is a plain button that runs that row and names it in its tooltip. Its rows are read
+// from there rather than by clicking it, which would open the row's editor.
+async function header_rows(page) {
+  const lone = await page.evaluate(() => {
+    const header = document.querySelector(".body-sidebar .sidebar-header");
+    const chevron = header && header.querySelector(".drop-icon");
+    return (
+      !!chevron &&
+      chevron.classList.contains("hidden") &&
+      header.getAttribute("title")
+    );
+  });
+  if (lone) return [lone];
+  await page.locator(".body-sidebar .sidebar-header").first().click();
+  await page.waitForTimeout(500);
+  const rows = await page.$$eval(MENU_ROWS, (els) =>
+    els.map((el) => el.textContent.trim())
+  );
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  return rows;
+}
+
+// Whether the Module Column is on screen (not below 768px, where the header menu picks).
+const column_on = (page) =>
+  page.evaluate(() => document.body.classList.contains("opendesk-column-on"));
+
+// An app with something to choose -- more than one module -- and its last module's label.
+const app_with_choice = (page) =>
+  page.evaluate(() => {
+    const app = (frappe.boot.desk_apps || []).find(
+      (a) =>
+        (a.modules || []).filter((m) => frappe.boot.module_sidebars[m.shell])
+          .length > 1
+    );
+    if (!app) return null;
+    const modules = app.modules.filter(
+      (m) => frappe.boot.module_sidebars[m.shell]
+    );
+    return { title: app.title, last: __(modules[modules.length - 1].label) };
+  });
+
 (async () => {
   const browser = await chromium.launch({
     channel: "chrome",
@@ -106,9 +151,16 @@ async function close_dialogs(page) {
         features,
         "no frappe.boot.opendesk_features: is Open Desk installed and built?"
       );
-      return Object.entries(features)
-        .map(([key, on]) => `${key} ${on ? "on" : "off"}`)
-        .join(", ");
+      return (
+        Object.entries(features)
+          // Switches are on or off; the module picker names its form.
+          .map(([key, value]) =>
+            typeof value === "string"
+              ? `${key} ${value}`
+              : `${key} ${value ? "on" : "off"}`
+          )
+          .join(", ")
+      );
     });
 
     // ---------------------------------------------------------------------------------- rail
@@ -142,49 +194,85 @@ async function close_dialogs(page) {
     });
 
     await check(
-      "picking an app opens its module list, and a module opens it",
+      "picking an app offers its modules, and a module opens it",
       async () => {
         if (!features.navigation_rail)
           return { skip: "Override Navigation Rail is off" };
-        // An app with something to choose: more than one module, or modules and a frontend.
-        const title = await page.evaluate(() => {
-          const app = (frappe.boot.desk_apps || []).find(
-            (a) =>
-              (a.modules || []).filter(
-                (m) => frappe.boot.module_sidebars[m.shell]
-              ).length > 1
-          );
-          return app && app.title;
-        });
-        if (!title) return { skip: "no app with more than one module" };
+        const picker = features.module_picker || "header";
+        const app = await app_with_choice(page);
+        if (!app) return { skip: "no app with more than one module" };
+        const { title } = app;
         await page
           .locator(`.dock .opendesk-rail-app[aria-label="${title}"]`)
           .click();
         await page.waitForTimeout(800);
-        const rows = await page.locator(".opendesk-module-row").count();
-        assert(rows > 1, `${title}: the module list has ${rows} rows`);
         const before = page.url();
-        await page.locator(".opendesk-module-row").last().click();
-        await settle(page);
-        const listed = await page.evaluate(
-          () => !!frappe.app.sidebar.opendesk_module_list
+        const landed = () =>
+          before === page.url() ? "same page" : "a module page";
+
+        if (picker === "sidebar") {
+          const rows = await page.locator(".opendesk-module-row").count();
+          assert(rows > 1, `${title}: the module list has ${rows} rows`);
+          await page.locator(".opendesk-module-row").last().click();
+          await settle(page);
+          const listed = await page.evaluate(
+            () => !!frappe.app.sidebar.opendesk_module_list
+          );
+          assert(!listed, "the module list stayed up after picking a module");
+          return `Sidebar List, ${title}: ${rows} rows, then ${landed()}`;
+        }
+
+        if (picker === "column" && (await column_on(page))) {
+          const shown = await page.evaluate(() =>
+            document.querySelector(".opendesk-column-title").textContent.trim()
+          );
+          assert(shown === title, `the column shows ${shown}, not ${title}`);
+          const rows = await page.locator(".opendesk-column-row").count();
+          assert(rows > 1, `${title}: the column has ${rows} rows`);
+          await page.locator(".opendesk-column-row").last().click();
+          await settle(page);
+          const browsing = await page.evaluate(
+            () => !!(frappe.app.sidebar.opendesk_column || {}).browsing
+          );
+          assert(!browsing, "the column kept the picked app after a module");
+          return `Module Column, ${title}: ${rows} rows, then ${landed()}`;
+        }
+
+        // The Header Menu, and the Module Column below 768px: the header's menu picks.
+        await page.waitForSelector(MENU_ROWS, { timeout: 5000 });
+        const rows = await page.$$eval(MENU_ROWS, (els) =>
+          els.map((el) => el.textContent.trim())
         );
-        assert(!listed, "the module list stayed up after picking a module");
-        return `${title}: ${rows} rows, then ${
-          before === page.url() ? "same page" : "a module page"
-        }`;
+        assert(
+          rows.includes(app.last),
+          `${title}: the menu has no ${app.last} (${rows.join(", ")})`
+        );
+        await page
+          .getByRole("menuitem", { name: app.last, exact: true })
+          .first()
+          .click();
+        await settle(page);
+        const open = await page.evaluate(
+          () =>
+            !!frappe.app.sidebar.opendesk_picker_app ||
+            !!document.querySelector('[role="menu"]')
+        );
+        assert(!open, "the module picker stayed open after picking a module");
+        return `Header Menu, ${title}: ${rows.length} rows, then ${landed()}`;
       }
     );
 
-    await check("the header menu lists the open app's modules", async () => {
+    await check("the header menu opens", async () => {
       if (!features.navigation_rail)
         return { skip: "Override Navigation Rail is off" };
-      await page.locator(".body-sidebar .sidebar-header").first().click();
-      await page.waitForTimeout(500);
-      const rows = await page.$$eval(MENU_ROWS, (els) => els.length);
-      await page.keyboard.press("Escape");
-      assert(rows > 0, "the header menu is empty");
-      return `${rows} rows`;
+      const rows = await header_rows(page);
+      assert(rows.length > 0, "the header menu is empty");
+      // Beside the Module Column the modules are not in it, and one row is the header itself.
+      if (!(await column_on(page)))
+        assert(rows.length > 1, `only ${rows.join(", ")} in the header menu`);
+      return rows.length === 1
+        ? `one row, on the header: ${rows[0]}`
+        : `${rows.length} rows`;
     });
 
     // ---------------------------------------------------------------------------- user menu
@@ -193,13 +281,7 @@ async function close_dialogs(page) {
       async () => {
         if (!features.user_menu)
           return { skip: "Move Help and Site Tools to User Menu is off" };
-        await page.locator(".body-sidebar .sidebar-header").first().click();
-        await page.waitForTimeout(400);
-        const header = await page.$$eval(MENU_ROWS, (els) =>
-          els.map((el) => el.textContent.trim())
-        );
-        await page.keyboard.press("Escape");
-        await page.waitForTimeout(300);
+        const header = await header_rows(page);
         await page
           .locator(".dock .dock-user, .body-sidebar .sidebar-user")
           .first()
@@ -265,37 +347,43 @@ async function close_dialogs(page) {
       return detail;
     });
 
-    await check(
-      "Manage Modules opens from the module list header",
-      async () => {
-        if (!features.navigation_rail)
-          return { skip: "Override Navigation Rail is off" };
-        if (!can_manage) return { skip: `${USER} may not edit Desk Apps` };
-        const title = await page.evaluate(() => {
-          const app = (frappe.boot.desk_apps || []).find(
-            (a) =>
-              (a.modules || []).filter(
-                (m) => frappe.boot.module_sidebars[m.shell]
-              ).length > 1
-          );
-          return app && app.title;
-        });
-        if (!title) return { skip: "no app with more than one module" };
-        await page
-          .locator(`.dock .opendesk-rail-app[aria-label="${title}"]`)
-          .click();
-        await page.waitForTimeout(800);
+    await check("Manage Modules opens from the module picker", async () => {
+      if (!features.navigation_rail)
+        return { skip: "Override Navigation Rail is off" };
+      if (!can_manage) return { skip: `${USER} may not edit Desk Apps` };
+      const picker = features.module_picker || "header";
+      const app = await app_with_choice(page);
+      if (!app) return { skip: "no app with more than one module" };
+      const { title } = app;
+      await page
+        .locator(`.dock .opendesk-rail-app[aria-label="${title}"]`)
+        .click();
+      await page.waitForTimeout(800);
+      if (picker === "sidebar") {
+        // From the module list's header.
         await page.locator(".body-sidebar .sidebar-header").first().click();
-        await page.waitForSelector(".modal.show .ws-arrangement-item", {
-          timeout: 15000,
-        });
-        const rows = await page
-          .locator(".modal.show .ws-arrangement-item")
-          .count();
-        await close_dialogs(page);
-        return `${title}: ${rows} rows`;
+      } else if (picker === "column" && (await column_on(page))) {
+        // From the column's foot. Hidden while the column is folded, so clicked from the script.
+        await page.evaluate(() =>
+          document.querySelector(".opendesk-column-manage").click()
+        );
+      } else {
+        // The menu's last row.
+        await page.waitForSelector(MENU_ROWS, { timeout: 5000 });
+        await page
+          .getByRole("menuitem", { name: "Manage Modules", exact: true })
+          .click();
       }
-    );
+      await page.waitForSelector(".modal.show .ws-arrangement-item", {
+        timeout: 15000,
+      });
+      const rows = await page
+        .locator(".modal.show .ws-arrangement-item")
+        .count();
+      await close_dialogs(page);
+      await page.keyboard.press("Escape");
+      return `${title}: ${rows} rows`;
+    });
 
     // --------------------------------------------------------------------------- Apps screen
     await check("Apps screen draws and offers Manage Desk Apps", async () => {
@@ -332,7 +420,7 @@ async function close_dialogs(page) {
     });
 
     await check(
-      "an Apps screen tile with a choice opens the module list",
+      "an Apps screen tile with a choice offers its modules",
       async () => {
         if (!features.navigation_rail)
           return { skip: "Override Navigation Rail is off" };
@@ -364,10 +452,32 @@ async function close_dialogs(page) {
           .first()
           .click();
         await settle(page, 2000);
-        const listed = await page.evaluate(
-          () => !!frappe.app.sidebar.opendesk_module_list
-        );
-        assert(listed, `${title}: landed without the module list`);
+        const picker = features.module_picker || "header";
+        if (picker === "sidebar") {
+          const listed = await page.evaluate(
+            () => !!frappe.app.sidebar.opendesk_module_list
+          );
+          assert(listed, `${title}: landed without the module list`);
+        } else if (picker === "column" && (await column_on(page))) {
+          // It lands in the app's first module, so the column shows that app.
+          const shown = await page.evaluate(() =>
+            document.querySelector(".opendesk-column-title").textContent.trim()
+          );
+          assert(shown === title, `${title}: the column shows ${shown}`);
+        } else {
+          const picked = await page.evaluate(() => {
+            const app = frappe.app.sidebar.opendesk_picker_app;
+            return {
+              app: app && app.title,
+              menu: !!document.querySelector('[role="menu"]'),
+            };
+          });
+          assert(
+            picked.app === title && picked.menu,
+            `${title}: landed without the module picker (${picked.app})`
+          );
+          await page.keyboard.press("Escape");
+        }
         return title;
       }
     );

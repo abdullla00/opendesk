@@ -6,7 +6,7 @@
  "engine": "InnoDB",
  "issingle": 1,
  "links": [],
- "modified": "2026-10-08 21:30:00.000000",
+ "modified": "2026-10-08 23:00:00.000000",
  "modified_by": "Administrator",
  "module": "Open Desk",
  "name": "Open Desk Settings",
@@ -20,6 +20,7 @@
   "overrides_section",
   "overrides_column",
   "enable_navigation_rail",
+  "module_picker",
   "enable_apps_screen",
   "moves_column",
   "enable_rail_tools",
@@ -38,10 +39,19 @@
   },
   {
    "default": "0",
-   "description": "Turns the Dock, the column left of the sidebar, into a rail of apps: the Desk Apps, then each installed app Frappe lists on its Apps screen, with every module left over under Other. Picking an app lists its modules in the sidebar.",
+   "description": "Turns the Dock, the column left of the sidebar, into a rail of apps: the Desk Apps, then each installed app Frappe lists on its Apps screen, with every module left over under Other. Picking an app offers its modules, as Module Picker says.",
    "fieldname": "enable_navigation_rail",
    "fieldtype": "Check",
    "label": "Override Navigation Rail"
+  },
+  {
+   "default": "Header Menu",
+   "read_only_depends_on": "eval:!doc.enable_navigation_rail",
+   "description": "Where picking an app on the rail offers its modules. Header Menu: the menu at the top of the sidebar opens on the app's modules over the page you are on, the sidebar always holds the module's content, and the header names the app over its module. Sidebar List: the sidebar's rows become the app's modules until you pick one, and the header names the module over its app. Module Column: the app's modules get a column of their own between the rail and the sidebar, which folds to its icons and opens over the sidebar while pointed at; the sidebar always holds the module's content.",
+   "fieldname": "module_picker",
+   "fieldtype": "Select",
+   "label": "Module Picker",
+   "options": "Header Menu\nSidebar List\nModule Column"
   },
   {
    "default": "0",

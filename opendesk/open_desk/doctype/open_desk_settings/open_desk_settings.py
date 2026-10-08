@@ -20,6 +20,7 @@ class OpenDeskSettings(Document):
 		enable_navigation_rail: DF.Check
 		enable_rail_tools: DF.Check
 		enable_user_menu: DF.Check
+		module_picker: DF.Literal["Header Menu", "Sidebar List", "Module Column"]
 	# end: auto-generated types
 
 	pass

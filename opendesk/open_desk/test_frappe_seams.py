@@ -45,9 +45,13 @@ SEAMS = {
 			"refresh_header",
 			"refresh_dock",
 			"create_user_menu",
+			# The Module Column redraws with the sidebar's visibility.
+			"apply_page_visibility",
+			"toggle",
 		],
 		"properties": [
 			"$items_container",
+			"wrapper",
 			"current_module",
 			"sidebar_expanded",
 			"sidebar_header",
@@ -95,8 +99,10 @@ SEAMS = {
 			"navbar_items",
 			"get_help_siblings",
 			"refresh",
+			# The Header Menu opens the header's own menu.
+			"setup_menu",
 		],
-		"properties": ["wrapper", "$header_title", "$header_logo", "$drop_icon", "sidebar"],
+		"properties": ["wrapper", "$header_title", "$header_logo", "$drop_icon", "sidebar", "menu"],
 		"strings": ["frappe.ui.SidebarHeader =", "switch-module", "switch-app", "all-apps"],
 	},
 	("ui", "sidebar", "sidebar_header.html"): {"strings": ["title-container"]},
@@ -156,7 +162,12 @@ SEAMS = {
 		],
 		"strings": ["frappe.ui.ArrangementEditor ="],
 	},
-	("ui", "components", "dropdown.js"): {"strings": ["frappe.ui.Dropdown ="]},
+	# The Header Menu opens and closes the header's menu, and chains onto its `opts.on_close`.
+	("ui", "components", "dropdown.js"): {
+		"methods": ["open", "close"],
+		"properties": ["opts"],
+		"strings": ["frappe.ui.Dropdown =", "this.opts.on_close && this.opts.on_close(reason)"],
+	},
 	# Manage Desk Apps' Apps Screen menu marks the current choice; the rows' labels are text.
 	("ui", "components", "menu.js"): {"strings": ["item.selected", "textContent"]},
 	# An Apps screen tile: where it leads, and the two links the rail recognises it by.

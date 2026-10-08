@@ -332,3 +332,223 @@ body .modal .opendesk-arrange-letter {
 		font-size: var(--text-xs);
 	}
 }
+
+// The module column (see "Module Column" in the script): the app's modules in a column of their
+// own, between the rail and the sidebar. In flow, so the page starts after it; folded it keeps
+// only its icons, and a folded column that peeks opens its panel over the sidebar instead of
+// moving the page. The rows borrow the sidebar's own look.
+:root {
+	--opendesk-column-width: 208px;
+	--opendesk-column-folded-width: 48px;
+}
+
+.opendesk-module-column {
+	display: none;
+}
+
+body.opendesk-column-on .opendesk-module-column:not(.hidden) {
+	display: block;
+	position: relative;
+	flex: 0 0 auto;
+	width: var(--opendesk-column-width);
+	height: 100vh; // fallback for engines without dvh
+	height: 100dvh;
+	transition: width 0.25s ease-in-out;
+
+	&.opendesk-column-folded {
+		width: var(--opendesk-column-folded-width);
+	}
+}
+
+.opendesk-column-panel {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	background: var(--desk-sidebar-bg);
+	border-right: 1px solid var(--outline-gray-1);
+	overflow: hidden;
+	// Over the sidebar (1020) when it peeks, under the rail (1030) and the menus.
+	z-index: 1021;
+	transition: width 0.2s ease-in-out, box-shadow 0.2s ease;
+
+	.opendesk-module-column.opendesk-column-folded.opendesk-column-peek & {
+		width: var(--opendesk-column-width);
+		box-shadow: var(--shadow-2xl);
+		z-index: 1025;
+	}
+}
+
+// The app's mark and name, in the band the sidebar's header sits in.
+.opendesk-column-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 0 0 auto;
+	height: 48px;
+	padding: 0 10px;
+
+	.opendesk-column-mark {
+		display: flex;
+		flex: 0 0 auto;
+		width: 28px;
+		height: 28px;
+		align-items: center;
+		justify-content: center;
+
+		img,
+		svg {
+			max-width: 28px;
+			max-height: 28px;
+		}
+	}
+
+	.opendesk-column-title {
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--ink-gray-9);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
+.opendesk-column-rows {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 2px 8px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.opendesk-column-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 28px;
+	padding: 0 8px;
+	border-radius: var(--radius);
+	color: var(--ink-gray-7);
+	font-size: var(--text-sm);
+	text-align: left;
+	white-space: nowrap;
+
+	&:hover:not(.active) {
+		background: var(--surface-gray-2);
+	}
+
+	&.active {
+		background: var(--surface-elevation-3);
+		box-shadow: var(--shadow-sm);
+		color: var(--ink-gray-8);
+	}
+
+	.opendesk-column-icon {
+		display: flex;
+		flex: 0 0 auto;
+
+		.icon {
+			width: 16px;
+			height: 16px;
+		}
+	}
+
+	.opendesk-column-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+}
+
+.opendesk-column-category {
+	position: relative;
+	padding: 10px 8px 4px;
+	font-size: var(--text-xs);
+	color: var(--ink-gray-5);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.opendesk-column-space {
+	flex: 0 0 auto;
+	height: 8px;
+}
+
+.opendesk-column-foot {
+	display: flex;
+	flex: 0 0 auto;
+	gap: 4px;
+	padding: 8px 10px;
+
+	// The fold button first, so it sits in the same place folded and open.
+	.opendesk-column-fold {
+		order: -1;
+	}
+}
+
+.opendesk-column-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--radius);
+	color: var(--ink-gray-6);
+
+	&:hover {
+		background: var(--surface-gray-2);
+		color: var(--ink-gray-8);
+	}
+
+	&.hidden {
+		display: none;
+	}
+}
+
+// Folded and not peeking: icons only. Nothing moves: every row, the mark and the fold button keep
+// the place they have open, left-aligned, and only the column's width cuts the rest off -- so a
+// peek opening or closing, or a pick from it, never shifts what stays on screen. The 16px glyphs
+// at 8px + 8px in are centred in the 48px anyway. The labels, the name and the Manage button go,
+// and a heading keeps its height but draws a rule instead of its text.
+.opendesk-module-column.opendesk-column-folded:not(.opendesk-column-peek) {
+	.opendesk-column-title,
+	.opendesk-column-label,
+	.opendesk-column-manage {
+		visibility: hidden;
+	}
+
+	.opendesk-column-category {
+		color: transparent;
+
+		&::after {
+			content: "";
+			position: absolute;
+			left: 4px;
+			right: 4px;
+			top: 50%;
+			border-top: 1px solid var(--outline-gray-1);
+		}
+	}
+}
+
+// Below 768px Frappe hides the rail, and the column goes with it at once, before the script has
+// redrawn it (`resize.opendesk-column`). 767px is the edge of Bootstrap's md, as in dock.scss.
+@media (max-width: 767px) {
+	body.opendesk-column-on .opendesk-module-column:not(.hidden) {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.opendesk-module-column,
+	.opendesk-column-panel {
+		transition: none !important;
+	}
+}

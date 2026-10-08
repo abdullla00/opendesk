@@ -1,0 +1,23 @@
+{
+ "app": "opendesk",
+ "creation": "2026-10-08 18:00:00",
+ "docstatus": 0,
+ "doctype": "Dock",
+ "idx": 0,
+ "items": [
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "open-desk-duotone",
+   "link_to": "Open Desk",
+   "link_type": "Sidebar",
+   "title": "Open Desk"
+  }
+ ],
+ "modified": "2026-10-08 18:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "opendesk",
+ "owner": "Administrator",
+ "standard": 1,
+ "user": ""
+}

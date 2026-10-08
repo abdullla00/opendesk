@@ -3,272 +3,77 @@ app_title = "Open Desk"
 app_publisher = "Peter"
 app_description = "An app rail and other desk navigation extensions for Frappe"
 app_email = "pgraif@gmail.com"
-app_license = "mit"
+app_license = "none"
+
+# On Frappe's Apps screen and in its Apps switcher, for those who may configure it. Declaring this
+# is also what makes Frappe -- and the rail, which follows Frappe's rule -- list Open Desk as an
+# app of its own rather than leave its module under Other (`desk_apps.listed_apps`).
+add_to_apps_screen = [
+	{
+		"name": "opendesk",
+		"logo": "/assets/opendesk/images/opendesk-logo.svg",
+		"title": "Open Desk",
+		"route": "/desk/open-desk-settings",
+		"has_permission": "opendesk.open_desk.settings.may_configure",
+	}
+]
+# Its mark is the `logo` above, which the rail and the Apps screen both read. Not also the
+# `app_logo_url` hook: Frappe falls back to that hook for the *site's* logo when exactly two
+# apps declare one (`navbar_settings.get_app_logo`), so on a site of Frappe and Open Desk alone
+# this app's mark would become the site's.
+
+# The module's dual-tone icon (`open-desk-duotone`), drawn by the Dock and the sidebar header.
+# The Dock and the Sidebar themselves are documents this app ships: `opendesk/dock/opendesk/`
+# and `opendesk/open_desk/sidebar/open_desk/`, synced on migrate.
+app_include_icons = ["/assets/opendesk/icons/module-icons.svg"]
 
 # Apps
 # ------------------
 
-# required_apps = []
-
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "opendesk",
-# 		"logo": "/assets/opendesk/logo.png",
-# 		"title": "Open Desk",
-# 		"route": "/opendesk",
-# 		"has_permission": "opendesk.api.permission.has_app_permission",
-# 	}
-# ]
-
-# The dock, the rail down the left of the desk, is a document rather than a hook. Author it in
-# Manage Dock on a developer-mode site and press Export to App, and it is written to
-# `opendesk/dock/opendesk/opendesk.json` for git to carry. An app that ships none has no
-# rail: its sidebar gets a switcher in the header instead.
-#
-# A companion app, one that extends a host app rather than standing on its own, says so with
-# `mount_on` on that same record, and its entries are appended to the host's rail. Mounting keeps
-# the companion off the apps screen, so it takes precedence over any add_to_apps_screen above.
+# Nothing but Frappe. Every feature here changes Frappe's own desk, and each is
+# off until Open Desk Settings switches it on. Other apps add to the rail through
+# `opendesk.rail.tools` (`open_desk/js/rail.js`) and need nothing from this app
+# when it is not installed.
+required_apps = []
 
 # Includes in <head>
 # ------------------
 
-# include js, css files in header of desk.html
-# app_include_css = "/assets/opendesk/css/opendesk.css"
-# app_include_js = "/assets/opendesk/js/opendesk.js"
-
-# include js, css files in header of web template
-# web_include_css = "/assets/opendesk/css/opendesk.css"
-# web_include_js = "/assets/opendesk/js/opendesk.js"
-
-# include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "opendesk/public/scss/website"
-
-# include js, css files in header of web form
-# webform_include_js = {"doctype": "public/js/doctype.js"}
-# webform_include_css = {"doctype": "public/css/doctype.css"}
-
-# include js in page
-# page_js = {"page" : "public/js/file.js"}
-
-# include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
-# doctype_kanban_js = {"doctype" : "public/js/doctype_kanban.js"}
-# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
-# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
-
-# Svg Icons
-# ------------------
-# include app icons in desk
-# app_include_icons = "opendesk/public/icons.svg"
-
-# Home Pages
-# ----------
-
-# application home page (will override Website Settings)
-# home_page = "login"
-
-# website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
-
-# Generators
-# ----------
-
-# automatically create page for each record of this doctype
-# website_generators = ["Web Page"]
-
-# automatically load and sync documents of this doctype from downstream apps
-# importable_doctypes = [doctype_1]
-
-# Jinja
-# ----------
-
-# add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "opendesk.utils.jinja_methods",
-# 	"filters": "opendesk.utils.jinja_filters"
-# }
-
-# Installation
-# ------------
-
-# before_install = "opendesk.install.before_install"
-# after_install = "opendesk.install.after_install"
-
-# Uninstallation
-# ------------
-
-# before_uninstall = "opendesk.uninstall.before_uninstall"
-# after_uninstall = "opendesk.uninstall.after_uninstall"
-
-# Integration Setup
-# ------------------
-# To set up dependencies/integrations with other apps
-# Name of the app being installed is passed as an argument
-
-# before_app_install = "opendesk.utils.before_app_install"
-# after_app_install = "opendesk.utils.after_app_install"
-
-# Integration Cleanup
-# -------------------
-# To clean up dependencies/integrations with other apps
-# Name of the app being uninstalled is passed as an argument
-
-# before_app_uninstall = "opendesk.utils.before_app_uninstall"
-# after_app_uninstall = "opendesk.utils.after_app_uninstall"
-
-# Build
-# ------------------
-# To hook into the build process
-
-# after_build = "opendesk.build.after_build"
-
-# Desk Notifications
-# ------------------
-# See frappe.core.notifications.get_notification_config
-
-# notification_config = "opendesk.notifications.get_notification_config"
-
-# Awesome Bar
-# -----------
-# Extra search results: list of dicts with label, description, route, index.
-# route: ["List", "ToDo"], "/desk/docs/some/page", or "https://example.com"
-# awesomebar_search = ["opendesk.search.awesomebar_results"]
-
-# Permissions
-# -----------
-# Permissions evaluated in scripted ways
-
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+# One bundle, loaded after core's own `app_include_js`, so the classes it patches
+# already exist. `opendesk/public/js/opendesk.bundle.js` lists what is in it.
+app_include_js = "opendesk.bundle.js"
+app_include_css = "opendesk.bundle.css"
 
 # Document Events
 # ---------------
-# Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	# The rail's site-level inputs are cached; these are what it reads.
+	# See `opendesk.open_desk.desk_apps._site_inputs`.
+	**{
+		doctype: {
+			"on_update": "opendesk.open_desk.desk_apps.clear_cache",
+			"after_delete": "opendesk.open_desk.desk_apps.clear_cache",
+		}
+		for doctype in ("Desk App", "Module Def", "Dock")
+	},
+}
 
-# Scheduled Tasks
-# ---------------
+# Boot
+# ----
 
-# scheduler_events = {
-# 	"all": [
-# 		"opendesk.tasks.all"
-# 	],
-# 	"daily": [
-# 		"opendesk.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"opendesk.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"opendesk.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"opendesk.tasks.monthly"
-# 	],
-# }
-
-# Testing
-# -------
-
-# before_tests = "opendesk.install.before_tests"
-
-# Extend DocType Class
-# ------------------------------
-#
-# Specify custom mixins to extend the standard doctype controller.
-# extend_doctype_class = {
-# 	"Task": "opendesk.custom.task.CustomTaskMixin"
-# }
-
-# Overriding Methods
-# ------------------------------
-#
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "opendesk.event.get_events"
-# }
-#
-# each overriding function accepts a `data` argument;
-# generated from the base implementation of the doctype dashboard,
-# along with any modifications made in other Frappe apps
-# override_doctype_dashboards = {
-# 	"Task": "opendesk.task.get_dashboard_data"
-# }
-
-# exempt linked doctypes from being automatically cancelled
-#
-# auto_cancel_exempted_doctypes = ["Auto Repeat"]
-
-# Ignore links to specified DocTypes when deleting documents
-# -----------------------------------------------------------
-
-# ignore_links_on_delete = ["Communication", "ToDo"]
-
-# Request Events
-# ----------------
-# before_request = ["opendesk.utils.before_request"]
-# after_request = ["opendesk.utils.after_request"]
-
-# Job Events
-# ----------
-# before_job = ["opendesk.utils.before_job"]
-# after_job = ["opendesk.utils.after_job"]
-
-# User Data Protection
-# --------------------
-
-# user_data_fields = [
-# 	{
-# 		"doctype": "{doctype_1}",
-# 		"filter_by": "{filter_by}",
-# 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_2}",
-# 		"filter_by": "{filter_by}",
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_3}",
-# 		"strict": False,
-# 	},
-# 	{
-# 		"doctype": "{doctype_4}"
-# 	}
-# ]
-
-# Authentication and authorization
-# --------------------------------
-
-# auth_hooks = [
-# 	"opendesk.auth.validate"
-# ]
+extend_bootinfo = [
+	# The rail's apps, when Open Desk Settings switches it on.
+	"opendesk.open_desk.desk_apps.extend_bootinfo",
+	# Frappe's Apps screen arranged from the same apps, when Open Desk Settings says so.
+	# After the rail's, whose answer it reuses.
+	"opendesk.open_desk.apps_screen.extend_bootinfo",
+	# Which of the desk patches Open Desk Settings switches on.
+	"opendesk.open_desk.settings.extend_bootinfo",
+]
 
 # Automatically update python controller files with type annotations for this app.
-# export_python_type_annotations = True
+export_python_type_annotations = True
 
-# default_log_clearing_doctypes = {
-# 	"Logging DocType Name": 30  # days to retain logs
-# }
-
-# Translation
-# ------------
-# List of apps whose translatable strings should be excluded from this app's translations.
-# ignore_translatable_strings_from = []
-
+# Require all whitelisted methods to have type annotations
+require_type_annotated_api_methods = True

@@ -1,0 +1,18 @@
+<!-- Open Desk's dual-tone module icon, for the Dock and the sidebar header, in the style of
+     Frappe's own (`frappe/public/icons/module-icons.svg`): two fills, dark and light, taken from
+     the variables Frappe's sprite defines, with fallbacks for a page that has none.
+
+     The desk as Open Desk draws it: the rail down the left (dark), holding three app tiles, and
+     the sidebar beside it (light), holding a module's rows. -->
+<svg id="opendesk-module-symbols" aria-hidden="true" style="display: none;" class="icon" xmlns="http://www.w3.org/2000/svg">
+	<symbol viewBox="0 0 24 24" id="icon-open-desk-duotone" stroke="none" style="overflow: visible">
+		<path d="M3.8 3H7.2V21H3.8A1.8 1.8 0 0 1 2 19.2V4.8A1.8 1.8 0 0 1 3.8 3Z" style="fill: var(--duotone-dark, light-dark(var(--ink-gray-5), var(--ink-gray-6)))" />
+		<path d="M8 3H20.2A1.8 1.8 0 0 1 22 4.8V19.2A1.8 1.8 0 0 1 20.2 21H8Z" style="fill: var(--duotone-light, var(--ink-gray-3))" />
+		<rect x="3.4" y="5.2" width="2.4" height="2.4" rx="0.7" style="fill: var(--duotone-light, var(--ink-gray-3))" />
+		<rect x="3.4" y="9" width="2.4" height="2.4" rx="0.7" style="fill: var(--duotone-light, var(--ink-gray-3))" />
+		<rect x="3.4" y="12.8" width="2.4" height="2.4" rx="0.7" style="fill: var(--duotone-light, var(--ink-gray-3))" />
+		<rect x="10" y="5.6" width="7.6" height="1.7" rx="0.85" style="fill: var(--duotone-dark, light-dark(var(--ink-gray-5), var(--ink-gray-6)))" />
+		<rect x="10" y="9.4" width="9.8" height="1.7" rx="0.85" style="fill: var(--duotone-dark, light-dark(var(--ink-gray-5), var(--ink-gray-6)))" />
+		<rect x="10" y="13.2" width="6.2" height="1.7" rx="0.85" style="fill: var(--duotone-dark, light-dark(var(--ink-gray-5), var(--ink-gray-6)))" />
+	</symbol>
+</svg>

@@ -1,0 +1,86 @@
+{
+ "actions": [],
+ "creation": "2026-10-08 12:00:00",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-08 21:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Open Desk",
+ "name": "Open Desk Settings",
+ "owner": "Administrator",
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "field_order": [
+  "overrides_section",
+  "overrides_column",
+  "enable_navigation_rail",
+  "enable_apps_screen",
+  "moves_column",
+  "enable_rail_tools",
+  "enable_user_menu"
+ ],
+ "fields": [
+  {
+   "description": "These change how Frappe's desk behaves and depend on details of its code that an upgrade can change, so switch them off first if the desk misbehaves after an upgrade. Changes apply when each user reloads the page.",
+   "fieldname": "overrides_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "overrides_column",
+   "fieldtype": "Column Break",
+   "label": "Overrides"
+  },
+  {
+   "default": "0",
+   "description": "Turns the Dock, the column left of the sidebar, into a rail of apps: the Desk Apps, then each installed app Frappe lists on its Apps screen, with every module left over under Other. Picking an app lists its modules in the sidebar.",
+   "fieldname": "enable_navigation_rail",
+   "fieldtype": "Check",
+   "label": "Override Navigation Rail"
+  },
+  {
+   "default": "0",
+   "description": "Arranges the icons on Frappe's Apps screen (/desk) from the Desk Apps, in rail order, as each Desk App's Apps Screen setting says. Only where Desktop Settings' Desktop Page is Apps: Frappe's older Desktop Icons grid is left as Frappe draws it. Turned off, Frappe's own Apps screen comes back.",
+   "fieldname": "enable_apps_screen",
+   "fieldtype": "Check",
+   "label": "Override Desktop Icons"
+  },
+  {
+   "fieldname": "moves_column",
+   "fieldtype": "Column Break",
+   "label": "Moves"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_rail_tools",
+   "fieldtype": "Check",
+   "label": "Move Search and Notifications to Rail",
+   "description": "Moves Search and Notifications, and any tiles other apps add there (such as To Do), from the top of the sidebar to the foot of the rail, where their drawers open beside the rail. Turned off, they stay where Frappe puts them. Needs Override Navigation Rail.",
+   "read_only_depends_on": "eval:!doc.enable_navigation_rail"
+  },
+  {
+   "default": "0",
+   "description": "Moves Help and the site's tools (the Navbar Settings rows, such as System Console) from the menu at the top of the sidebar into the user menu, above Logout.",
+   "fieldname": "enable_user_menu",
+   "fieldtype": "Check",
+   "label": "Move Help and Site Tools to User Menu"
+  }
+ ],
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ]
+}

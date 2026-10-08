@@ -1,0 +1,49 @@
+{
+ "app": "opendesk",
+ "creation": "2026-10-08 18:00:00",
+ "docstatus": 0,
+ "doctype": "Sidebar",
+ "header_icon": "open-desk-duotone",
+ "idx": 0,
+ "items": [
+  {
+   "added": 0,
+   "child": 0,
+   "collapsible": 0,
+   "hidden": 0,
+   "icon": "settings",
+   "indent": 0,
+   "is_default_module": 0,
+   "keep_closed": 0,
+   "label": "Open Desk Settings",
+   "link_to": "Open Desk Settings",
+   "link_type": "DocType",
+   "open_in_new_tab": 0,
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "added": 0,
+   "child": 0,
+   "collapsible": 0,
+   "hidden": 0,
+   "icon": "app-window",
+   "indent": 0,
+   "is_default_module": 0,
+   "keep_closed": 0,
+   "label": "Desk Apps",
+   "link_to": "Desk App",
+   "link_type": "DocType",
+   "open_in_new_tab": 0,
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-08 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Open Desk",
+ "name": "Open Desk",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Open Desk"
+}

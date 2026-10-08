@@ -1,0 +1,14 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Open Desk's mark, on the Apps screen and the rail: the desk as the app draws it. A
+       rail down the left holding three app tiles, and the sidebar beside it holding a
+       module's rows. The same rounded 64px tile as the other marks on the rail, with
+       solid white shapes rather than strokes, which stay legible at the rail's 28px. -->
+  <rect width="64" height="64" rx="14" fill="#3b5bdb"/>
+  <rect x="12" y="13" width="11" height="38" rx="4" fill="#fff"/>
+  <rect x="15" y="17" width="5" height="5" rx="1.5" fill="#3b5bdb"/>
+  <rect x="15" y="25" width="5" height="5" rx="1.5" fill="#3b5bdb"/>
+  <rect x="15" y="33" width="5" height="5" rx="1.5" fill="#3b5bdb"/>
+  <rect x="28" y="18" width="18" height="4" rx="2" fill="#fff"/>
+  <rect x="28" y="27" width="24" height="4" rx="2" fill="#fff"/>
+  <rect x="28" y="36" width="14" height="4" rx="2" fill="#fff"/>
+</svg>

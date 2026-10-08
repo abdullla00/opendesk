@@ -15,6 +15,12 @@ dependencies = [
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
 
+# Frappe Cloud uses this to pick a compatible Frappe version when installing the app
+[tool.bench.frappe-dependencies]
+frappe = ">=16.50.0,<17.0.0"
+# 16.50 because the rail is built on its Dock, Sidebar and Apps screen; see
+# `opendesk/open_desk/test_frappe_seams.py` for every name it hangs on.
+
 # These dependencies are only installed when developer mode is enabled
 [tool.bench.dev-dependencies]
 # package_name = "~=1.1.0"

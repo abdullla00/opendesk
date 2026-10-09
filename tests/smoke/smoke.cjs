@@ -1,5 +1,5 @@
 // A browser smoke test for Open Desk: the rail, its module picker and tools, the user menu, Manage
-// Rail and Manage Modules, and the Apps screen, on a running site, as one user. The module picker
+// Desk Apps and Manage Modules, and the Apps screen, on a running site, as one user. The module picker
 // is checked in whichever form Open Desk Settings' Module Picker gives it: Header Menu, Sidebar
 // List or Module Column.
 //

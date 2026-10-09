@@ -33,7 +33,7 @@ bench install-app opendesk
 ### Tests
 
 A browser smoke test against a running site: the rail, its module list, the user menu, Manage
-Rail and Manage Modules, and the Apps screen. It only reads, checks whatever the site has
+Desk Apps and Manage Modules, and the Apps screen. It only reads, checks whatever the site has
 switched on, and logs out at the end. It drives your installed Chrome; Playwright is installed
 once into `~/.cache/opendesk-smoke`.
 

@@ -53,7 +53,14 @@ def _rail(module_sidebars: dict | None = None) -> list[dict]:
 
 
 def _parse(items) -> list[dict]:
-	return json.loads(items) if isinstance(items, str) else list(items or [])
+	"""An editor's rows: a list of objects, sent as JSON or as the list itself."""
+	try:
+		rows = json.loads(items) if isinstance(items, str) else (items or [])
+	except ValueError:
+		rows = None
+	if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
+		frappe.throw(_("The editor sent rows this cannot read."), frappe.ValidationError)
+	return rows
 
 
 # ------------------------------------------------------------------------------------
@@ -212,7 +219,7 @@ def _store_order(
 	by_key = {app["key"]: app for app in rail}
 	listed = {*nav.listed_apps(), nav.OTHER}
 	defaults = [f"app:{name}" for name in [*frappe.get_installed_apps(), nav.OTHER]]
-	anchors = anchors_for(keys, defaults, {key for key in keys if by_key[key].get("record")})
+	anchors = positions(keys, by_key, hidden, listed, defaults)
 	meta = nav.apps_from_app_data(get_app_data())[0]
 
 	for key in keys:
@@ -250,6 +257,29 @@ def _store_order(
 				frappe.delete_doc(APP, doc.name)
 		elif changed:
 			doc.save()
+
+
+def positions(
+	keys: list[str], by_key: dict[str, dict], hidden: set[str], listed: set[str], defaults: list[str]
+) -> dict[str, str | None]:
+	"""What each app in `keys` follows on the rail (`anchors_for`), leaving out the apps not on it.
+
+	An app Frappe does not list (`listed`, which holds Other too), kept hidden, is not on the rail
+	at all: its modules are under Other. Its place there means nothing, and a place is something its
+	record would hold -- enough to keep that record, which, hidden, would take the app's modules off
+	the rail altogether instead of leaving them in Other. So it follows nothing, and nothing follows
+	it.
+	"""
+	off = {key for key in keys if key in hidden and _is_unlisted(by_key[key], listed)}
+	placed = [key for key in keys if key not in off]
+	anchors = anchors_for(placed, defaults, {key for key in placed if by_key[key].get("record")})
+	return {**anchors, **dict.fromkeys(off)}
+
+
+def _is_unlisted(app: dict, listed: set[str]) -> bool:
+	"""Whether a rail app stands for an installed app Frappe does not list as somewhere to go."""
+	target = app.get("installed_app")
+	return bool(target) and target not in listed
 
 
 def anchors_for(keys: list[str], defaults: list[str], with_record: set[str]) -> dict[str, str | None]:

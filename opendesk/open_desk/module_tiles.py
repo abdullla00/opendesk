@@ -9,20 +9,26 @@ header draw -- but that is a symbol in an icon sprite (`app_include_icons`), not
 image. So the symbol is lifted out of the sprite that holds it and set on a tile in the
 shape and colour of the Apps screen's own artwork (`desktop_icons/<style>/*.svg`): a
 54px rounded square, the glyph white on the app's colour (Solid), or in the app's
-colour on a tint of it (Subtle). It is handed over as a `data:` URL, so the tile is an
-ordinary image and nothing in the browser changes.
+colour on a tint of it (Subtle). It is handed over as a URL (`tile`, below), so the tile is
+an ordinary image and nothing in the browser changes.
+
+A URL rather than the picture itself: a module's icon is a couple of kilobytes of SVG, and the
+boot carries every tile on every page load. The URL ends in a hash of the picture it draws, so
+it never changes what it shows, and the browser keeps each one rather than asking again.
 
 The app's colour is the one its shipped artwork is drawn in, else its logo's, else
 Frappe's grey -- read from the files, not kept here.
 """
 
+import hashlib
 import os
 import re
 from collections import Counter
 from functools import lru_cache
-from urllib.parse import quote
+from urllib.parse import urlencode
 
 import frappe
+from frappe import _
 
 GREY = "#7B808A"
 _FILL = re.compile(r'fill="(#[0-9A-Fa-f]{6})"')
@@ -33,7 +39,41 @@ _TILE = (
 
 
 def picture(icon: str | None, app: str | None, style: str | None) -> str | None:
-	"""The tile for `icon`, in `app`'s colour, as a `data:` URL; None when no sprite has it."""
+	"""The tile for `icon`, in `app`'s colour, as a URL; None when no sprite has it."""
+	svg = draw(icon, app, style)
+	if not svg:
+		return None
+	query = {"icon": icon, "app": app or "", "style": style or "", "v": _digest(svg)}
+	return f"/api/method/opendesk.open_desk.module_tiles.tile?{urlencode(query)}"
+
+
+@frappe.whitelist(methods=["GET"])
+def tile(icon: str, app: str | None = None, style: str | None = None) -> None:
+	"""The picture `picture` points at, as an SVG image.
+
+	Kept by the browser for good: the URL carries a hash of the picture (`v`), so a changed
+	sprite or colour is a new URL. Drawn from the installed apps' own files and the icon's
+	name, which is checked, so it is the same for everyone who may see the desk.
+	"""
+	svg = draw(icon, app or None, style or None)
+	if not svg:
+		raise frappe.DoesNotExistError(_("No icon called {0}.").format(icon))
+	frappe.response.update(
+		type="download",
+		filename=f"{icon}.svg",
+		filecontent=svg.encode(),
+		content_type="image/svg+xml",
+		display_content_as="inline",
+	)
+	headers = frappe.local.response_headers
+	headers["Cache-Control"] = "private, max-age=31536000, immutable"
+	# Opened on its own rather than as an image, it still runs nothing.
+	headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'"
+	headers["X-Content-Type-Options"] = "nosniff"
+
+
+def draw(icon: str | None, app: str | None, style: str | None) -> str | None:
+	"""The tile for `icon`, in `app`'s colour, as SVG source; None when no sprite has it."""
 	if not icon or not re.fullmatch(r"[\w-]+", icon):
 		return None
 	symbol = _symbols(tuple(frappe.get_installed_apps())).get(icon)
@@ -42,17 +82,20 @@ def picture(icon: str | None, app: str | None, style: str | None) -> str | None:
 	attrs, inner = symbol
 	color = app_color(app)
 	subtle = (style or "Solid").lower() == "subtle"
-	tile = f'fill="{color}" fill-opacity="0.19"' if subtle else f'fill="{color}"'
+	square = f'fill="{color}" fill-opacity="0.19"' if subtle else f'fill="{color}"'
 	ink = color if subtle else "#FFFFFF"
-	svg = (
+	return (
 		'<svg xmlns="http://www.w3.org/2000/svg" width="54" height="54" viewBox="0 0 54 54">'
 		# A duotone symbol paints with these; a line icon with `currentColor`.
 		f"<style>svg{{--duotone-dark:{ink};--duotone-light:{ink}8C;color:{ink}}}</style>"
-		f'<path d="{_TILE}" {tile}/>'
+		f'<path d="{_TILE}" {square}/>'
 		f'<svg x="14" y="14" width="26" height="26" {attrs}>{inner}</svg>'
 		"</svg>"
 	)
-	return "data:image/svg+xml," + quote(svg)
+
+
+def _digest(svg: str) -> str:
+	return hashlib.sha1(svg.encode(), usedforsecurity=False).hexdigest()[:12]
 
 
 def app_color(app: str | None) -> str:

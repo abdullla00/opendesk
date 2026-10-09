@@ -704,6 +704,35 @@ class TestRailPosition(TestCase):
 		anchors = anchors_for(keys, DEFAULTS, set())
 		self.assertEqual({k: a for k, a in anchors.items() if a}, {"app:erpnext": "app:Other"})
 
+	def test_a_hidden_unlisted_app_holds_no_place_and_nothing_follows_it(self):
+		"""Hidden, an app Frappe lists nowhere is off the rail with its modules in Other. A place
+		would keep its record, which, hidden, would take those modules off the rail altogether."""
+		from opendesk.open_desk.arrange import positions
+
+		defaults = [*DEFAULTS[:-1], "app:telephony", "app:Other"]
+		by_key = {key: {"key": key, "installed_app": key.removeprefix("app:")} for key in defaults}
+		by_key["app:telephony"]["record"] = "Telephony"
+		listed = {"frappe", "erpnext", "education", "Other"}
+		keys = ["app:telephony", "app:education", "app:frappe", "app:erpnext", "app:Other"]
+
+		hidden = positions(keys, by_key, {"app:telephony"}, listed, defaults)
+		self.assertIsNone(hidden["app:telephony"])
+		self.assertNotIn("app:telephony", hidden.values())
+		self.assertEqual(hidden["app:education"], "top")
+
+		shown = positions(keys, by_key, set(), listed, defaults)
+		self.assertEqual(shown["app:telephony"], "top")
+
+	def test_a_hidden_listed_app_keeps_its_place(self):
+		from opendesk.open_desk.arrange import positions
+
+		by_key = {key: {"key": key, "installed_app": key.removeprefix("app:")} for key in DEFAULTS}
+		keys = ["app:education", "app:frappe", "app:erpnext", "app:Other"]
+		anchors = positions(
+			keys, by_key, {"app:education"}, {"frappe", "erpnext", "education", "Other"}, DEFAULTS
+		)
+		self.assertEqual(anchors["app:education"], "top")
+
 	def test_a_bound_record_sits_at_its_apps_place_and_a_site_app_on_top(self):
 		result = rail([bound("Books", "erpnext"), app("Finance", "Students")])
 		self.assertEqual([entry["title"] for entry in result][:3], ["Finance", "Frappe Framework", "Books"])
@@ -712,3 +741,42 @@ class TestRailPosition(TestCase):
 		finance = {**app("Finance", "Students"), "rail_after": "app:erpnext"}
 		titles = [entry["title"] for entry in rail([finance])]
 		self.assertEqual(titles.index("Finance"), titles.index("ERPNext") + 1)
+
+
+class TestPlaceholder(TestCase):
+	"""A record that says nothing but which app it stands for is deleted rather than kept."""
+
+	def doc(self, **values):
+		fields = {
+			"installed_app": "telephony",
+			"enabled": 1,
+			"hidden": 0,
+			"rail_after": None,
+			"module_mode": "Add",
+			"modules": [],
+			"roles": [],
+			"icon": None,
+			"logo": None,
+			"frontend_url": None,
+			"frontend_label": None,
+			"apps_screen": "Default",
+			"title": "Telephony",
+		}
+		return SimpleNamespace(**{**fields, **values})
+
+	def test_an_unlisted_app_hidden_again_with_nothing_else_is_a_placeholder(self):
+		from opendesk.open_desk.arrange import _is_placeholder
+
+		self.assertTrue(_is_placeholder(self.doc(hidden=1), "Telephony", hidden_by_default=True))
+
+	def test_an_unlisted_app_shown_is_kept(self):
+		from opendesk.open_desk.arrange import _is_placeholder
+
+		self.assertFalse(_is_placeholder(self.doc(), "Telephony", hidden_by_default=True))
+
+	def test_a_place_or_a_setting_of_its_own_is_kept(self):
+		from opendesk.open_desk.arrange import _is_placeholder
+
+		for values in ({"rail_after": "top"}, {"apps_screen": "One Icon"}, {"title": "Calls"}):
+			with self.subTest(**values):
+				self.assertFalse(_is_placeholder(self.doc(**values), "Telephony"))

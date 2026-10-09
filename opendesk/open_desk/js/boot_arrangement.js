@@ -101,9 +101,9 @@ frappe.provide("opendesk.boot_arrangement");
 	// Run `settle` on every value assigned to `frappe.boot[key]`, and keep what it returns. Left
 	// alone if the property cannot be redefined.
 	//
-	// Another script may already watch the same property this way -- Commons' copy of this file
-	// does, on a site that runs both apps, from a bundle that loads first. Its setter then runs
-	// first, and this settles what it kept, so neither has to know the other is there.
+	// Another app's script may already watch the same property this way, from a bundle that loads
+	// first. Its setter then runs first, and this settles what it kept, so neither has to know the
+	// other is there.
 	function watch(key, settle) {
 		const descriptor = Object.getOwnPropertyDescriptor(boot, key);
 		if (descriptor && !descriptor.configurable) return;

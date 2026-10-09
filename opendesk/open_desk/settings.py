@@ -78,13 +78,40 @@ def extend_bootinfo(bootinfo: "frappe._dict") -> None:
 
 	Read once, when the scripts load, so a change reaches a user on their next reload. The
 	Apps screen counts as on only where the site's desktop is the Apps screen
-	(`apps_screen.enabled`).
+	(`apps_screen.enabled`). If the switches cannot be read, the desk is told none is on, and
+	its scripts install nothing: the boot is every page load, and must not fail with them.
 	"""
 	from opendesk.open_desk import apps_screen
 
-	bootinfo.opendesk_features = {key: feature_enabled(field) for key, field in DESK_FEATURES.items()}
-	bootinfo.opendesk_features["apps_screen"] = apps_screen.enabled()
-	bootinfo.opendesk_features["module_picker"] = module_picker()
+	try:
+		features = {key: feature_enabled(field) for key, field in DESK_FEATURES.items()}
+		features["apps_screen"] = apps_screen.enabled()
+		features["module_picker"] = module_picker()
+	except Exception:
+		log_boot_failure("Open Desk settings: kept Frappe's desk")
+		features = {}
+	bootinfo.opendesk_features = features
+
+
+# How long a boot hook's failure is logged once for, rather than on every page load.
+BOOT_FAILURE_QUIET = 60 * 60
+
+
+def log_boot_failure(title: str) -> None:
+	"""Log the exception being handled, once an hour per site and `title`.
+
+	The boot hooks run on every desk load for every user, so a fault in one would otherwise
+	write an Error Log per page shown. Called from the `except` that caught it.
+	"""
+	key = f"opendesk_boot_failure:{title}"
+	try:
+		if frappe.cache.get_value(key):
+			return
+		frappe.cache.set_value(key, 1, expires_in_sec=BOOT_FAILURE_QUIET)
+	except Exception:
+		# No cache to ask: logged every time, which is still better than not at all.
+		pass
+	frappe.log_error(title=title, defer_insert=True)
 
 
 def module_picker() -> str:

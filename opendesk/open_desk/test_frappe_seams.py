@@ -43,6 +43,8 @@ SEAMS = {
 			"empty",
 			"open",
 			"refresh_header",
+			# An Apps screen tile's landing page, which the rail matches a click to (`js/rail.js`).
+			"app_landing_route",
 			"refresh_dock",
 			"create_user_menu",
 			# The Module Column redraws with the sidebar's visibility.
@@ -184,7 +186,25 @@ CLASS_SOURCES = [("public", "scss"), ("public", "js", "frappe", "ui", "sidebar")
 
 # The Apps screen page: the container its tiles are in, and the rule for where each leads.
 DESKTOP_SEAMS = {
-	("desk", "page", "desktop", "desktop.js"): ['find(".desktop-container")', "app_landing_route(app)"]
+	("desk", "page", "desktop", "desktop.js"): [
+		'find(".desktop-container")',
+		"app_landing_route(app)",
+		# Manage Desk Apps in the Apps screen's avatar menu, and the screen redrawn after a save
+		# (`js/arrange.js`).
+		'trigger("desktop_screen", { desktop: this })',
+		"add_menu_item(item) {",
+		'frappe.pages["desktop"].desktop_page = new DesktopPage(page)',
+		"\tupdate() {",
+	],
+	# An editor's save hands the desk new workspaces, and it rebuilds its lookups from them.
+	("public", "js", "frappe", "desk.js"): ["setup_workspaces() {"],
+}
+
+# Frappe's server functions Open Desk calls outside the boot module, by module.
+SERVER_FUNCTIONS = {
+	"frappe.desk.doctype.dock.dock": ["get_app_base"],
+	"frappe.desk.doctype.desktop_settings.desktop_settings": ["get_desktop_page"],
+	"frappe.desk.desktop": ["get_workspaces"],
 }
 
 # The two Dock methods the rail replaces rather than wraps (`render_logo`, `render_entries` in
@@ -238,13 +258,22 @@ class TestFrappeSeams(TestCase):
 			with self.subTest(key=key):
 				self.assertIn(f"bootinfo.{key} =", source)
 
+	def test_server_functions_are_still_there(self):
+		"""Checked without a site: a name that moved would otherwise show only in the Error Log."""
+		import importlib
+
+		for module, names in SERVER_FUNCTIONS.items():
+			imported = importlib.import_module(module)
+			for name in names:
+				with self.subTest(function=f"{module}.{name}"):
+					self.assertTrue(callable(getattr(imported, name, None)))
+
 	def test_an_apps_shipped_dock_is_still_readable(self):
 		"""`desk_apps.shipped_docks` reads each app's own Dock, before any layer."""
 		from frappe.desk.doctype.dock import dock
 
 		if not getattr(frappe.local, "site", None):
 			self.skipTest("reads a site's Dock records: run with a site connected")
-		self.assertTrue(callable(getattr(dock, "get_app_base", None)))
 		for row in dock.get_app_base("frappe"):
 			with self.subTest(row=row.get("link_to")):
 				self.assertLessEqual({"link_type", "link_to", "hidden"}, set(row))

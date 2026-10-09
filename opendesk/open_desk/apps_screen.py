@@ -46,6 +46,8 @@ drawn from Desktop Icon records with each user's own arrangement, which Frappe i
 (`frappe/desk/RETIRING.md`). A site that chose it gets it as Frappe draws it.
 """
 
+import copy
+
 import frappe
 
 from opendesk.open_desk import desk_apps as nav
@@ -60,24 +62,28 @@ HIDDEN = "Hidden"
 
 def extend_bootinfo(bootinfo: "frappe._dict") -> None:
 	"""Arrange the Apps screen, when Open Desk Settings says so. Runs after the rail's hook."""
+	from opendesk.open_desk import settings
 
-	if not enabled():
-		return
-	if bootinfo.get("module_sidebars") is None or bootinfo.get("app_data") is None:
-		return
 	try:
+		if not enabled():
+			return
+		if bootinfo.get("module_sidebars") is None or bootinfo.get("app_data") is None:
+			return
 		rail = bootinfo.get("desk_apps")
 		if rail is None:
 			rail = nav.desk_apps(module_sidebars=bootinfo.module_sidebars, app_data=bootinfo.app_data)
+		# Arranged on a copy and handed over whole, so a failure halfway leaves Frappe's as it was.
+		app_data = copy.deepcopy(bootinfo.app_data)
 		arrange(
-			bootinfo.app_data,
+			app_data,
 			rail,
 			style=bootinfo.get("desktop_icon_style"),
 			module_sidebars=bootinfo.get("module_sidebars"),
 		)
+		bootinfo.app_data = app_data
 	except Exception:
-		# The boot is read on a GET; a broken arrangement leaves Frappe's own screen.
-		frappe.log_error(title="Apps screen from Desk Apps: kept Frappe's", defer_insert=True)
+		# The boot is every page load; a broken arrangement leaves Frappe's own screen.
+		settings.log_boot_failure("Apps screen from Desk Apps: kept Frappe's")
 
 
 MODES = (DEFAULT, ONE_ICON, PER_MODULE, BOTH, HIDDEN)

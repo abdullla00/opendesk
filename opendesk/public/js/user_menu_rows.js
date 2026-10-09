@@ -3,9 +3,9 @@
 // Frappe 16.50 builds the user menu in `Sidebar.create_user_menu`, for both the sidebar's user
 // button and the Dock's avatar, as a `frappe.ui.Dropdown` it makes there and does not hand back,
 // from a list of rows it writes inline. There is no hook to add a row. So for as long as that one
-// call runs, the Dropdown it makes is a subclass that passes its rows through every change
+// call runs, the first Dropdown made -- the user menu -- passes its rows through every change
 // registered here, in the order they were registered, and the call puts Frappe's Dropdown back
-// whatever happens.
+// whatever happens. Any other Dropdown made meanwhile is Frappe's, untouched.
 //
 // A feature registers a change with `opendesk.user_menu.add(change)`, which says whether the change
 // will reach the menu -- so a feature that also takes a row away elsewhere can leave it there when
@@ -45,12 +45,13 @@ frappe.provide("opendesk.user_menu");
 		Sidebar.prototype.create_user_menu = function () {
 			const sidebar = this;
 			const Dropdown = frappe.ui.Dropdown;
+			let changed = false;
 			frappe.ui.Dropdown = class extends Dropdown {
 				constructor(opts = {}) {
+					const first = !changed && Array.isArray(opts.options);
+					if (first) changed = true;
 					super(
-						Array.isArray(opts.options)
-							? { ...opts, options: apply_changes(opts.options, sidebar) }
-							: opts
+						first ? { ...opts, options: apply_changes(opts.options, sidebar) } : opts
 					);
 				}
 			};

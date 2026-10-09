@@ -125,8 +125,11 @@ HOME = "home"
 TOP = "top"
 
 
-# The site-level half of the rail: everything `resolve` reads except the user.
-CACHE_KEY = "opendesk_rail"
+# The site-level half of the rail: everything `resolve` reads except the user. Its value is
+# handed to `resolve` as keywords and outlives a restart, so the key names its shape: change
+# what `_site_inputs` holds, and the version goes up, or new code would read an old copy
+# between a deploy's restart and its migrate.
+CACHE_KEY = "opendesk_rail:v2"
 
 
 def extend_bootinfo(bootinfo: "frappe._dict") -> None:
@@ -146,18 +149,19 @@ def extend_bootinfo(bootinfo: "frappe._dict") -> None:
 	"""
 	from opendesk.open_desk import settings
 
-	if not settings.feature_enabled(settings.ENABLE_NAVIGATION_RAIL):
-		return
-	module_sidebars = bootinfo.get("module_sidebars")
-	if module_sidebars is None:
-		return
 	try:
+		if not settings.feature_enabled(settings.ENABLE_NAVIGATION_RAIL):
+			return
+		module_sidebars = bootinfo.get("module_sidebars")
+		if module_sidebars is None:
+			return
 		bootinfo.desk_apps = desk_apps(module_sidebars=module_sidebars, app_data=bootinfo.get("app_data"))
 		bootinfo.opendesk_site_logo = site_logo()
 	except Exception:
 		# The boot is every page load: a broken rail must not take the desk with it.
 		# Without `desk_apps` the browser half installs nothing.
-		frappe.log_error(title="Open Desk rail: kept Frappe's Dock", defer_insert=True)
+		bootinfo.pop("desk_apps", None)
+		settings.log_boot_failure("Open Desk rail: kept Frappe's Dock")
 
 
 def site_logo() -> str | None:
@@ -421,7 +425,7 @@ def resolve(
 			rail.append(
 				{
 					# A bound app keeps its installed app's key: the browser finds an
-					# app by it and remembers each app's last module under it.
+					# app by it, and other apps anchor to it (`rail_after`).
 					"key": f"app:{target}" if target else f"desk-app:{app['name']}",
 					"app_name": _app_name(target) if target else f"desk-app:{app['name']}",
 					"record": app["name"],

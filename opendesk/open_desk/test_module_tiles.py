@@ -5,21 +5,31 @@
 
 from unittest import TestCase
 from unittest.mock import patch
-from urllib.parse import unquote
+from urllib.parse import parse_qs, urlsplit
 
 from opendesk.open_desk import module_tiles
 
 SYMBOLS = {"calculator-duotone": ('viewBox="0 0 24 24" stroke="none"', '<path d="M1 1H2Z"/>')}
 
 
-def drawn(icon, style="Solid"):
-	with (
+def sprites(color="#0289F7"):
+	return (
 		patch.object(module_tiles, "_symbols", return_value=SYMBOLS),
-		patch.object(module_tiles, "app_color", return_value="#0289F7"),
+		patch.object(module_tiles, "app_color", return_value=color),
 		patch.object(module_tiles.frappe, "get_installed_apps", return_value=["frappe", "erpnext"]),
-	):
-		url = module_tiles.picture(icon, "erpnext", style)
-	return url and unquote(url.removeprefix("data:image/svg+xml,"))
+	)
+
+
+def drawn(icon, style="Solid"):
+	a, b, c = sprites()
+	with a, b, c:
+		return module_tiles.draw(icon, "erpnext", style)
+
+
+def pictured(icon, color="#0289F7"):
+	a, b, c = sprites(color)
+	with a, b, c:
+		return module_tiles.picture(icon, "erpnext", "Solid")
 
 
 class TestPicture(TestCase):
@@ -38,3 +48,23 @@ class TestPicture(TestCase):
 		self.assertIsNone(drawn("not-an-icon"))
 		self.assertIsNone(drawn(None))
 		self.assertIsNone(drawn('x" onload="alert(1)'))
+
+
+class TestPictureURL(TestCase):
+	"""The boot carries a URL to the picture, which names it and changes whenever it does."""
+
+	def test_the_url_names_the_picture_and_its_hash(self):
+		url = urlsplit(pictured("calculator-duotone"))
+		self.assertEqual(url.path, "/api/method/opendesk.open_desk.module_tiles.tile")
+		query = parse_qs(url.query)
+		self.assertEqual(query["icon"], ["calculator-duotone"])
+		self.assertEqual(query["app"], ["erpnext"])
+		self.assertEqual(len(query["v"][0]), 12)
+
+	def test_a_changed_picture_is_a_new_url(self):
+		self.assertEqual(pictured("calculator-duotone"), pictured("calculator-duotone"))
+		self.assertNotEqual(pictured("calculator-duotone"), pictured("calculator-duotone", "#E86C13"))
+
+	def test_no_symbol_is_no_url(self):
+		self.assertIsNone(pictured("not-an-icon"))
+		self.assertIsNone(pictured('x" onload="alert(1)'))
